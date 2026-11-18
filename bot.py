@@ -68,7 +68,7 @@ HAFTA = ("dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba", "y
 # ---------------- Baza ----------------
 
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0") or 0)  # faqat shu odam bazani yuklay oladi
+ADMIN_ID = int(os.getenv("ADMIN_ID", "1000605834") or 1000605834)  # faqat shu odam bazani yuklay oladi
 db = sqlite3.connect(DB_PATH)
 
 
