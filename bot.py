@@ -128,6 +128,49 @@ def jadvallar_tayyorla():
 jadvallar_tayyorla()
 
 
+def eski_bazani_qosh(manba: str):
+    """seed/ dagi eski bazadagi yozuvlarni hozirgi bazaga qo'shadi (takrorlamasdan)."""
+    if not os.path.exists(manba):
+        return
+    e = sqlite3.connect(f"file:{manba}?mode=ro", uri=True)
+    qoshildi = 0
+
+    def kopir(jadval, kalit):
+        nonlocal qoshildi
+        try:
+            ustun = [r[1] for r in e.execute(f"PRAGMA table_info({jadval})") if r[1] != "id"]
+            bor = [r[1] for r in db.execute(f"PRAGMA table_info({jadval})")]
+            ustun = [u for u in ustun if u in bor]
+        except sqlite3.Error:
+            return
+        if not ustun:
+            return
+        for row in e.execute(f"SELECT {','.join(ustun)} FROM {jadval}"):
+            r = dict(zip(ustun, row))
+            shart = " AND ".join(f"{k} IS ?" for k in kalit)
+            if db.execute(f"SELECT 1 FROM {jadval} WHERE {shart}", [r[k] for k in kalit]).fetchone():
+                continue
+            db.execute(f"INSERT INTO {jadval}({','.join(ustun)}) VALUES({','.join('?' * len(ustun))})",
+                       [r[u] for u in ustun])
+            qoshildi += 1
+
+    kopir("amallar", ("chat_id", "sana", "vaqt", "yuan", "kurs"))
+    kopir("usd_amallar", ("chat_id", "sana", "vaqt", "summa"))
+    kopir("xarajatlar", ("chat_id", "sana", "bolim", "nomi", "summa"))
+    kopir("hamkorlar", ("user_id",))
+    kopir("sozlama", ("chat_id",))
+    # PIN va sozlamalar: serverda bo'sh bo'lsa, eskisidan olinadi
+    for chat_id, pin in e.execute("SELECT chat_id, pin_hash FROM sozlama WHERE pin_hash IS NOT NULL"):
+        db.execute("UPDATE sozlama SET pin_hash=? WHERE chat_id=? AND pin_hash IS NULL", (pin, chat_id))
+    db.commit()
+    e.close()
+    if qoshildi:
+        print(f"Eski bazadan {qoshildi} ta yozuv qo'shildi")
+
+
+eski_bazani_qosh(str(BASE / "seed" / "hisob-eski.db"))
+
+
 def hozir():
     return datetime.now(TZ)
 

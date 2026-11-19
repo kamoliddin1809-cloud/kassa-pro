@@ -1,4 +1,3 @@
-*.db
 *.log
 .git
 __pycache__
